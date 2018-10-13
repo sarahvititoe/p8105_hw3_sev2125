@@ -14,7 +14,6 @@ knitr::opts_chunk$set(
   out.width = "90%")
 
 library(tidyverse)
-library(p8105.datasets)
 
 ```
 
@@ -31,7 +30,7 @@ library(p8105.datasets)
 brfss <- p8105.datasets::brfss_smart2010 %>%
   janitor::clean_names() %>%
   filter(topic == "Overall Health") %>%
-  mutate(response = as.factor(response))
+  mutate(response = factor(response, levels = c("Excellent", "Very good", "Good", "Fair", "Poor")))
 ```
 
 *"Using this dataset, do or answer the following (commenting on the results of each):"*
@@ -90,6 +89,7 @@ brfss %>%
 
 *"For each year and state, compute the average proportion in each response category (taking the average across locations in a state)."*
 
+##### Table 2: Average Proportion of Responses for Each Category of Overall Health 
 ```{r}
 brfss %>%
   spread(key = response, value = data_value) %>%  
@@ -99,6 +99,28 @@ brfss %>%
   knitr::kable()
 ```
 
+*"Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time."* 
+
+```{r}
+brfss %>%
+  select(locationabbr, year, response, data_value) %>% 
+  mutate(year = as.factor(year)) %>% 
+  group_by(locationabbr, year, response) %>%
+  summarise(state_avg = round(mean(data_value, na.rm = TRUE), 2)) %>% 
+  ggplot(aes(x=state_avg, y=year, fill = ..x..)) +
+    ggridges::geom_density_ridges_gradient(scale = 1) + 
+    viridis::scale_fill_viridis(
+      option = "inferno", 
+      name = "Percent") +
+    facet_grid(cols = vars(response)) +
+  labs(
+      title = "(Fig. 2) Distribution of State-Level Responses to Overall Health Question, From 2002 - 2010", 
+      y = "Year",
+      x = "Percent of Responses (State Average)"
+    ) +
+    theme_bw() + 
+    theme(legend.position = "bottom") 
+```
 
 
 Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
