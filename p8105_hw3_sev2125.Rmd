@@ -47,6 +47,8 @@ brfss %>%
   knitr::kable()
 ```
 
+States with 7 sites include Conneticut, Montana, New Hampshire, New Mexico, Oregon, Tennessee, and Utah. 
+
 *"Make a “spaghetti plot” that shows the number of locations in each state from 2002 to 2010."*
 
 ```{r spaghetti_plot}
@@ -67,11 +69,11 @@ brfss %>%
     theme(legend.position = "bottom") 
 ```
 
+It seems as if most states have relatively constant numbers of sites over the years, or slightly increase as time goes on, with the exception of one spike for a state in 2007, and another spike in 2010. 
 
 *"Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State."*
 
 ##### Table 1: Excellent Responses Across Locations in New York State
-
 ```{r table1}
 brfss %>% 
   filter(year %in% c(2002, 2006, 2010), 
@@ -84,6 +86,7 @@ brfss %>%
             "Standard Deviation" = round(sd(data_value, na.rm = TRUE),2)) %>% 
   knitr::kable()
 ```
+For some counties, a standard deviation is not calculated due to a small sample size. 
 
 *"For each year and state, compute the average proportion in each response category (taking the average across locations in a state)."*
 
@@ -160,28 +163,59 @@ instacart %>%
     theme(axis.text.y = element_text(size = 6))
 ```
 
+We can see that we have very skewed data here. Our top 2 observatiosn are fresh vegetables and fresh fruits, which have hadover 150,000 ordered items from those isles. There are very few that have over 50,000 orders. 
+
 *"Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”."*
 
 ```{r}
 instacart %>%
   filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>%
-  select(Aisle = aisle, "Most Popular Product" = product_name) %>% 
-  group_by(Aisle,"Most Popular Product") %>% 
+  select(aisle, product_name) %>% 
+  group_by(aisle, product_name) %>% 
   summarise(count = n()) %>% 
   top_n(1) %>% 
-  select(-count) %>% 
+  select(-count) %>%
+  rename(Aisle = aisle, 
+         `Most Popular Product` = product_name) %>% 
   knitr::kable()
 ```
 
+People seem to love ordering their organic baby spinach, and light brown sugar from instacart, and buy lots of snack sticks for their good doggos. 
+
+*"Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table)."*
+```{r}
+instacart %>%
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarise(avg = floor(mean(order_hour_of_day, na.rm = TRUE))) %>% 
+  mutate(order_dow = factor(order_dow, levels=0:6,
+                      labels = c("Sunday", "Monday", "Tuesday", "Wednesday",
+                               "Thursday", "Friday", "Saturday"))) %>% 
+  spread(key = order_dow, value = avg) %>% 
+  select(Product = product_name, Monday:Saturday, Sunday) %>% 
+  knitr::kable()
+```
+
+Coffee Icecream seems to be ordered in the afternoon, while pink lady apples are ordered in the morning. 
+
+#### Problem 3
+*"This problem uses the NY NOAA data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets package (it’s called ny_noaa).*"
+
+```{r}
+noaa <- p8105.datasets::ny_noaa
+
+glimpse(noaa)
+```
+*"The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue. "*"
+
+Our NOAA dataset has `r nrows(noaa)` observations, and `r rcols(noaa)` variables. 
 
 
-Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+Then, do or answer the following (commenting on the results of each):
 
 
-Problem 3
-This problem uses the NY NOAA data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets package (it’s called ny_noaa).
 
-The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue. Then, do or answer the following (commenting on the results of each):
 
 Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?
 Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
