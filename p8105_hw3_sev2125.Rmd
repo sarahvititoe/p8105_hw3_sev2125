@@ -72,7 +72,7 @@ brfss %>%
 
 ##### Table 1: Excellent Responses Across Locations in New York State
 
-```{r}
+```{r table1}
 brfss %>% 
   filter(year %in% c(2002, 2006, 2010), 
          response == "Excellent", 
@@ -85,12 +85,10 @@ brfss %>%
   knitr::kable()
 ```
 
-# Go back and check this!!!
-
 *"For each year and state, compute the average proportion in each response category (taking the average across locations in a state)."*
 
 ##### Table 2: Average Proportion of Responses for Each Category of Overall Health 
-```{r}
+```{r table2, include = FALSE}
 brfss %>%
   spread(key = response, value = data_value) %>%  
   select(State = locationabbr, Year = year, Excellent, `Very good`, Good, Fair, Poor) %>%
@@ -98,6 +96,7 @@ brfss %>%
   summarise_all(funs(round(mean(., na.rm = TRUE), 2))) %>% 
   knitr::kable()
 ```
+Note: I wasn't sure if you wanted this table in addition to the plot. I included it just in case, but set echo to FALSE, since it is very, very long.
 
 *"Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time."* 
 
@@ -114,7 +113,7 @@ brfss %>%
       name = "Percent") +
     facet_grid(cols = vars(response)) +
   labs(
-      title = "(Fig. 2) Distribution of State-Level Responses to Overall Health Question, From 2002 - 2010", 
+      title = "(Fig. 2) State-Level Average Overall Health, From 2002 - 2010", 
       y = "Year",
       x = "Percent of Responses (State Average)"
     ) +
@@ -122,17 +121,60 @@ brfss %>%
     theme(legend.position = "bottom") 
 ```
 
+#### Problem 2
+*"This problem uses the Instacart data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets package (it’s called instacart)."*
 
-Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
+```{r load_ic}
+instacart <- p8105.datasets::instacart
+```
 
-Problem 2
-This problem uses the Instacart data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets package (it’s called instacart).
+"*The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations."*
+ 
+```{r}
+glimpse(instacart)
+```
+ 
+This dataset contains `r nrow(instacart)` observations and `r ncol(instacart)` variables, representing `r select(instacart, order_id) %>% n_distinct` orders, `r select(instacart, product_id) %>% n_distinct` products, and `r select(instacart, user_id) %>% n_distinct` users. We have information regarding the product, such as it's name, it's aisle location and department, whether it has been reordered, and the order in which it was added to a customer's shopping cart. We also know some information about the shopper, such as how many orders they have places, the days since their previous order, and the day of the week and time they placed their order. The data seems fairly tidy, though a data dictionary might be necessary to decode some of these variables. 
+ 
+*"Then, do or answer the following (commenting on the results of each):*
 
-The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations. Then, do or answer the following (commenting on the results of each):
+*How many aisles are there, and which aisles are the most items ordered from?"*
 
-How many aisles are there, and which aisles are the most items ordered from?
-Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
-Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”.
+There are `r instacart %>% select(aisle_id) %>% n_distinct()` aisles. The aisle with the most items ordered from it is the `r instacart %>% group_by(aisle) %>% summarise(n = n()) %>% top_n(1) %>% select(aisle)` aisle, with `r instacart %>% group_by(aisle) %>% summarise(n = n()) %>% top_n(1) %>% select(n)` items ordered from it. 
+
+*"Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it."*
+
+```{r fig.asp = 1.5}
+instacart %>%
+  group_by(aisle) %>% 
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>% 
+  ggplot(., aes(x = count, y = reorder(aisle, count))) + 
+    geom_point(size = 1) + 
+    labs(
+        title = "Number of Items Ordered in Each Grocery Aisle",
+        x = "Number Ordered", 
+        y = "Aisle"
+    ) +
+    theme_bw() + 
+    theme(axis.text.y = element_text(size = 6))
+```
+
+*"Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”."*
+
+```{r}
+instacart %>%
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>%
+  select(Aisle = aisle, "Most Popular Product" = product_name) %>% 
+  group_by(Aisle,"Most Popular Product") %>% 
+  summarise(count = n()) %>% 
+  top_n(1) %>% 
+  select(-count) %>% 
+  knitr::kable()
+```
+
+
+
 Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
 
