@@ -27,33 +27,82 @@ library(p8105.datasets)
 *focus on the “Overall Health” topic*
 *include only responses from “Excellent” to “Poor”*
 *organize responses as a factor taking levels ordered from “Excellent” to “Poor”"*
-```{r}
+```{r brfss_clean}
 brfss <- p8105.datasets::brfss_smart2010 %>%
   janitor::clean_names() %>%
   filter(topic == "Overall Health") %>%
   mutate(response = as.factor(response))
 ```
 
+*"Using this dataset, do or answer the following (commenting on the results of each):"*
+*"In 2002, which states were observed at 7 locations?"*
+
+```{r 7_locations}
+brfss %>% 
+  select(State = locationabbr, locationdesc) %>% 
+  group_by(State) %>% 
+  distinct() %>% 
+  tally() %>%
+  filter(n == 7) %>%
+  select(-n) %>%
+  knitr::kable()
+```
+
+*"Make a “spaghetti plot” that shows the number of locations in each state from 2002 to 2010."*
+
+```{r spaghetti_plot}
+brfss %>%
+  select(year, locationabbr, locationdesc) %>%
+  group_by(locationabbr, year) %>% 
+  distinct() %>% 
+  tally %>% 
+  ggplot(aes(y = n, x = year, group = locationabbr)) + 
+    geom_point(alpha = 0.3) + 
+    geom_line(alpha = 0.3) + 
+    labs(
+      title = "(Fig. 1) Number of Locations in Each State and DC from 2002 to 2010", 
+      y = "Number of Locations",
+      x = "Year"
+    ) +
+    theme_bw() + 
+    theme(legend.position = "bottom") 
+```
+
+
+*"Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State."*
+
+##### Table 1: Excellent Responses Across Locations in New York State
+
+```{r}
+brfss %>% 
+  filter(year %in% c(2002, 2006, 2010), 
+         response == "Excellent", 
+         locationabbr == "NY") %>% 
+  separate(locationdesc, into = c("delete", "Site"), sep = "-") %>% 
+  select(Site, data_value) %>%
+  group_by(Site) %>%
+  summarise("Average Proportion" = round(mean(data_value, na.rm = TRUE), 2),
+            "Standard Deviation" = round(sd(data_value, na.rm = TRUE),2)) %>% 
+  knitr::kable()
+```
+
+# Go back and check this!!!
+
+*"For each year and state, compute the average proportion in each response category (taking the average across locations in a state)."*
+
+```{r}
+brfss %>%
+  spread(key = response, value = data_value) %>%  
+  select(State = locationabbr, Year = year, Excellent, `Very good`, Good, Fair, Poor) %>%
+  group_by(State, Year) %>%
+  summarise_all(funs(round(mean(., na.rm = TRUE), 2))) %>% 
+  knitr::kable()
+```
 
 
 
+Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
 
-
-
-
-
-First, do some data cleaning:
-
-format the data to use appropriate variable names;
-focus on the “Overall Health” topic
-include only responses from “Excellent” to “Poor”
-organize responses as a factor taking levels ordered from “Excellent” to “Poor”
-Using this dataset, do or answer the following (commenting on the results of each):
-
-In 2002, which states were observed at 7 locations?
-Make a “spaghetti plot” that shows the number of locations in each state from 2002 to 2010.
-Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State.
-For each year and state, compute the average proportion in each response category (taking the average across locations in a state). Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
 Problem 2
 This problem uses the Instacart data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets package (it’s called instacart).
 
@@ -63,6 +112,8 @@ How many aisles are there, and which aisles are the most items ordered from?
 Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
 Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”.
 Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+
 Problem 3
 This problem uses the NY NOAA data. DO NOT include this dataset in your local data directory; instead, load the data from the p8105.datasets package (it’s called ny_noaa).
 
