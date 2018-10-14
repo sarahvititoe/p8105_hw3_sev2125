@@ -57,7 +57,7 @@ brfss %>%
   group_by(locationabbr, year) %>% 
   distinct() %>% 
   tally %>% 
-  ggplot(aes(y = n, x = year, group = locationabbr)) + 
+  ggplot(aes(y = n, x = year, group = locationabbr, color = locationabbr)) + 
     geom_point(alpha = 0.3) + 
     geom_line(alpha = 0.3) + 
     labs(
@@ -65,8 +65,9 @@ brfss %>%
       y = "Number of Locations",
       x = "Year"
     ) +
+   viridis::scale_color_viridis(option = "inferno", begin = .2, end = .2, discrete = TRUE, alpha = 0.3) +
     theme_bw() + 
-    theme(legend.position = "bottom") 
+    theme(legend.position = "none") 
 ```
 
 It seems as if most states have relatively constant numbers of sites over the years, or slightly increase as time goes on, with the exception of one spike for a state in 2007, and another spike in 2010. 
@@ -154,6 +155,7 @@ instacart %>%
   arrange(desc(count)) %>% 
   ggplot(., aes(x = count, y = reorder(aisle, count))) + 
     geom_point(size = 1) + 
+    viridis::scale_fill_viridis(option = "inferno", begin = .2, end = .2, discrete = TRUE) +
     labs(
         title = "Number of Items Ordered in Each Grocery Aisle",
         x = "Number Ordered", 
@@ -252,14 +254,64 @@ The most commonly observed value was `r noaa %>% group_by(snow_cm) %>% summarise
 ```{r}
 noaa %>%
   filter(month %in% c("01", "07")) %>% 
+  mutate(month = ifelse(month == "01", "January", "July")) %>% 
   select(id, tmax_c, year, month) %>% 
   group_by(id, year, month) %>% 
   filter(!is.na(tmax_c)) %>% 
   summarise(avg = mean(tmax_c, na.rm = TRUE)) %>% 
-  ggplot(aes(x = year, y = avg, color = id)) + 
-    geom_density() + 
-    facet_grid(~month) 
+  ggplot(aes(x = year, y = avg, group = id, color = month)) +   
+  viridis::scale_color_viridis(option = "inferno", begin = 0.25, end = 0.75, discrete = TRUE) +
+  geom_line(alpha = 0.1) +
+  facet_grid(rows = vars(month)) + 
+     labs(
+      title = "Maximum Temperatures Recorded at Each Site", 
+      y = "Average Max Temperature, in Degrees C",
+      x = "Year"
+    ) +
+    theme_bw() + 
+    theme(legend.position = "none") + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+All of the temperatures in July are much warmer than in January across all various sites. There seems to be more variability in site temperatures in January, compared to July, as well as a wider range of termperatures across sites. It looks like the January temperatuers are getting slightly higher over time, but I don't see much of a trend for the July temperatures. 
+
+*"Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year."*
+```{r}
+plot_i <- noaa %>%
+  ggplot(aes(x= tmin_c, y = tmax_c)) +
+  stat_binhex(bins = 80, start = 0.1) + 
+  viridis::scale_fill_viridis(option = "inferno") + 
+     labs(
+      title = "Comparing Daily Minimum and Maximum Temperatures", 
+      y = "Maximum Temperatures, (Degrees Celsius)",
+      x = "Minimum Temperatures, (Degrees Celsius)", 
+      fill = "Density"
+    ) +
+    theme_bw() + 
+    theme(legend.position = "right") 
+```
+
+```{r}
+plot_ii <- noaa %>%
+  filter(snow_cm > 0 & snow_cm < 100) %>% 
+  select(snow_cm, year) %>% 
+  ggplot(aes(x = snow_cm, y = year, fill = year)) +
+    ggridges::geom_density_ridges(scale = 2) + 
+    viridis::scale_fill_viridis(option = "inferno", begin = .2, end = .2, discrete = TRUE, alpha = 0.3) + 
+  labs(
+      title = "Snow Fall by Year", 
+      y = "",
+      x = "Snow Fall in Centimeters"
+    ) +
+    theme_bw() + 
+    theme(legend.position = "none") 
+```
+
+```{r fig.asp = 1.5}
+ggpubr::ggarrange(plot_i, plot_ii, 
+          labels = c("I.", "II."),
+          ncol = 1, nrow = 2)
+```
+
+From the above plots, we can see that minimum and maximum temperatures are highly correlated (plot I.). With these hexagon bins, we can see a few "hotspots" with highly dense datasets. In Plot II., we can see how the distribution of the snow fall changes by the year. 
 
